@@ -26,14 +26,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        button.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_save, 0, 0, 0);
-
         db = AppActivity.getDatabase();
         personsListTextView = findViewById(R.id.txt_list);
         firstNameEditText = findViewById(R.id.edittext_name);
         lastNameEditText = findViewById(R.id.edittext_surname);
         phoneNumberEditText = findViewById(R.id.edittext_phone);
         button = findViewById(R.id.button);
+
+        button.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_save, 0, 0, 0);
 
         button.setOnClickListener(new View.OnClickListener() {
             @Override
