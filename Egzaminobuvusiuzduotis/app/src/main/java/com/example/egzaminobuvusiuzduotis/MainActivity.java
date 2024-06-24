@@ -3,9 +3,23 @@ package com.example.egzaminobuvusiuzduotis;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
+import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.ContentValues;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Picture;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -14,15 +28,20 @@ import android.widget.ImageView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import android.os.Environment;
+import android.Manifest;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -64,8 +83,25 @@ public class MainActivity extends AppCompatActivity {
         thicknessBtn = findViewById(R.id.thickness);
         colorBtn= findViewById(R.id.color);
         openBtn = findViewById(R.id.open);
-
+        saveBtn = findViewById(R.id.save);
         int figure = 1;
+
+//        if (ContextCompat.checkSelfPermission(
+//                this, Manifest.permission.ACCESS_MEDIA_LOCATION) ==
+//                PackageManager.PERMISSION_GRANTED) {
+//            // You can use the API that requires the permission.
+//            Log.i("PERMISSION", "PERMISSION GRANTED");
+//
+//        } else if (ActivityCompat.shouldShowRequestPermissionRationale(
+//                this, Manifest.permission.ACCESS_MEDIA_LOCATION)) {
+//            Log.e("PERMISSION", "PERMISSION Requested");
+//            //showInContextUI(...);
+//        } else {
+////            requestPermissionLauncher.launch(
+////                    Manifest.permission.ACCESS_MEDIA_LOCATION);
+//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_MEDIA_LOCATION}, 1);
+//            Log.e("PERMISSION", "PERMISSION DENIED");
+//        }
 
         //region Listeners
 
@@ -109,12 +145,15 @@ public class MainActivity extends AppCompatActivity {
                 save(drawView);
             }
         };
+        saveBtn.setOnClickListener(saveBtnClick);
+
         View.OnClickListener openBtnClick = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 open(drawView);
             }
         };
+        openBtn.setOnClickListener(openBtnClick);
 
 
         triangleBtn.setOnClickListener(triangleBtnClick);
@@ -196,26 +235,110 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+//    public void save(View v){
+//        Bitmap b = Bitmap.createBitmap(drawView.getWidth(), drawView.getHeight(), Bitmap.Config.ARGB_8888);
+//        Canvas canvas = new Canvas(b);
+//        drawView.draw(canvas);
+//
+//        FileOutputStream outStream = null;
+//        File picturesDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+//        File file = new File(picturesDir, "shapeImage.jpg");
+//        if (file.exists())
+//            file.delete();
+//        try {
+//            outStream = new FileOutputStream(file);
+//            b.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
+//
+//            outStream.flush();
+//            outStream.close();
+//
+//            //MediaStore.Images.Media.insertImage(getContentResolver(), file.getAbsolutePath(), file.getName(), file.getName());
+//        } catch (FileNotFoundException e) {
+//            Log.w("TAG", "Error saving image file: " + e.getMessage());
+//
+//        } catch (IOException e) {
+//            Log.w("TAG", "Error saving image file: " + e.getMessage());
+//
+//        }
+//        //sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED, Uri.parse("file://" + Environment.getExternalStorageDirectory())));
+//    }
+
     public void save(View v){
         Bitmap b = Bitmap.createBitmap(drawView.getWidth(), drawView.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(b);
+        drawView.draw(canvas);
 
-        FileOutputStream outStream = null;
-        File file = new File(getExternalFilesDir(null), "shapeImage.jpg");
+        String displayName = "shapeImage.jpg";
+
+        // Delete
+        String selection = MediaStore.Images.Media.DISPLAY_NAME + "=?";
+        String[] selectionArgs = new String[] {displayName};
+        getContentResolver().delete(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, selection, selectionArgs);
+
+
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.DISPLAY_NAME, displayName);
+
+        Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
         try {
-            outStream = new FileOutputStream(file);
+            ParcelFileDescriptor pfd = getContentResolver().openFileDescriptor(uri, "w");
+            FileOutputStream outStream = new FileOutputStream(pfd.getFileDescriptor());
             b.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
-            outStream.flush();
             outStream.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+            pfd.close();
+        } catch (FileNotFoundException e) {
+            Log.w("TAG", "Error saving image file: " + e.getMessage());
+        } catch (IOException e) {
+            Log.w("TAG", "Error saving image file: " + e.getMessage());
         }
     }
 
+
+
+//    public void open(View v){
+//
+//        File picturesDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+//        File imgFile = new File(picturesDir, "shapeImage.jpg");
+//
+//        if(imgFile.exists()){
+//            Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+//            drawView.setBitmap(myBitmap);
+//        }
+//        else {
+//            Log.e("FNF", "File not found " + imgFile.getAbsolutePath());
+//        }
+//    }
+
     public void open(View v){
-        File imgFile = new  File(getExternalFilesDir(null), "shapeImage.jpg");
-        if(imgFile.exists()){
-            Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
-            drawView.setBitmap(myBitmap);
+        String selection = MediaStore.Images.Media.DISPLAY_NAME + "=?";
+        String[] selectionArgs = new String[] {"shapeImage.jpg"};
+        Uri queryUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+
+        ContentResolver resolver = getContentResolver();
+        Cursor cursor = resolver.query(queryUri, null, selection, selectionArgs, null);
+
+        if (cursor != null && cursor.moveToFirst()) {
+            int columnIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID);
+            long imageId = cursor.getLong(columnIndex);
+            Uri imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, imageId);
+
+            try {
+                ParcelFileDescriptor pfd = resolver.openFileDescriptor(imageUri, "r");
+                if (pfd != null) {
+                    Bitmap bitmap = BitmapFactory.decodeFileDescriptor(pfd.getFileDescriptor());
+                    drawView.setBitmap(bitmap);
+                    pfd.close();
+                }
+            } catch (FileNotFoundException e) {
+                Log.w("TAG", "Error opening image file: " + e.getMessage());
+            } catch (IOException e) {
+                Log.w("TAG", "Error opening image file: " + e.getMessage());
+            }
+        }
+
+        if (cursor != null) {
+            cursor.close();
         }
     }
 }

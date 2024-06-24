@@ -47,7 +47,8 @@ public class DrawView extends View {
     private SharedPreferences sharedPreferences;
     public FigureSave figureSave;
     private Gson gson;
-    private Bitmap bitmap;
+    public Bitmap bitmap;
+    boolean isRandom;
 
 
     public DrawView(Context context) {
@@ -69,6 +70,7 @@ public class DrawView extends View {
 
     void init(Context context)
     {
+        //Instance saving
         Gson gson = new Gson();
         sharedPreferences = context.getSharedPreferences("circleData", Context.MODE_PRIVATE);
         String json = sharedPreferences.getString("circleDataList", null);
@@ -89,16 +91,16 @@ public class DrawView extends View {
     public boolean getFillFlag() {
         return fillFlag;
     }
-
     public void setFillFlag(boolean fillFlag) {
         this.fillFlag = fillFlag;
     }
+
 
     public void changeThickness(){
         Random random = new Random();
         height = random.nextInt(getHeight()/3);
     }
-boolean isRandom;
+
     public void changeColor(){
         Random random = new Random();
        colorH =  Color.argb(255, random.nextInt(255), random.nextInt(255), random.nextInt(255));
@@ -111,9 +113,6 @@ boolean isRandom;
     {
         super.onDraw(canvas);
 
-        if (bitmap != null) {
-            canvas.drawBitmap(bitmap, 0, 0, null);
-        }
         colorH = Color.GREEN;
         width = getWidth();
 
@@ -181,6 +180,14 @@ boolean isRandom;
         }
         Log.d("Test", "Figure: " + figure + " ColorH: " + colorH);
         if(figureSave != null)  saveData();
+
+        if (bitmap != null) {
+            canvas.drawBitmap(bitmap, 0, 0, null);
+            Log.d("DrawView", "Bitmap drawn");
+            bitmap = null;
+        } else {
+            Log.d("DrawView", "Bitmap is null");
+        }
     }
 
     private void rectangle(Paint paint, int width, int height, Canvas canvas, int color, Rect rect) {
@@ -192,8 +199,6 @@ boolean isRandom;
         paint.setStrokeWidth(10f);
 
         canvas.drawRect(rect, paint);
-
-
     }
 
     private void circle(Paint paint, int width, int height, Canvas canvas) {
@@ -230,6 +235,8 @@ boolean isRandom;
         canvas.drawPath(path, paint);
 
     }
+
+    //Saves on next launch
     public void saveData() {
         Gson gson = new Gson();
         SharedPreferences.Editor editor = sharedPreferences.edit();
